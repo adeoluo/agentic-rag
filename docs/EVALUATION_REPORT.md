@@ -1,34 +1,30 @@
-# Evaluation Report - Agentic Rag
+# Evaluation Report - Agentic RAG
 
-> Reproduce everything here with `make evaluation`. Report mean ± 95% confidence interval over N seeds.
+> Reproduce with `python -m agentic_rag evaluate`. Deterministic and offline.
 
 ## Setup
-- **Task / dataset:** name, size, split.
-- **Metrics:** definition of each metric and why it's the right one.
-- **Graders:** exact-match / model-graded (which model, prompt) / human.
-- **Baselines:** what you compare against.
-- **Seeds:** list. **Hardware:** e.g., 1×A100 80GB. **Cost:** $X. **Runtime:** Yh.
 
-## Headline results
+- **Corpus:** 11 short passages linked by shared entities (landmark, city, country).
+- **Questions:** 7 labeled questions, 3 of them genuinely multi-hop (the answer passage
+  shares no words with the question and is reachable only through an intermediate entity).
+- **Metric:** retrieval success - whether the labeled answer passage was retrieved - split
+  by single- vs multi-hop.
+- **Methods:** agentic multi-hop retrieval vs a single-hop BM25 baseline.
 
-| Metric | This project | Baseline | SOTA / ref | Δ vs baseline |
-|---|---:|---:|---:|---:|
-| Primary (↑) | **0.00 ± 0.00** | 0.00 | 0.00 | +0.00 |
-| Latency p95 (ms, ↓) | **0** | 0 | - | - |
-| Cost / 1k ($, ↓) | **0.00** | 0.00 | - | - |
+## Results
 
-## Ablations
+| Method | overall | multi-hop | single-hop |
+|---|---:|---:|---:|
+| single-hop baseline | 0.43 | 0.00 | 0.75 |
+| agentic | 0.71 | 0.67 | 0.75 |
 
-| Variant | Metric | Δ | Notes |
-|---|---:|---:|---|
-| Full | 0.00 | - | reference |
-| - component X | 0.00 | −0.00 | shows X matters |
+## Interpretation
 
-## LLM-as-judge validation (if used)
-- Agreement with human labels (Cohen's κ / accuracy), bias controls, sample size.
-
-## Error analysis
-- Top failure categories with counts and representative examples.
+Single-hop retrieval cannot answer the multi-hop questions at all (0.00): the answer passage
+has no lexical overlap with the question. Agentic retrieval follows the intermediate entity
+and reaches the answer passage on two of three (0.67), a +0.67 gain, without regressing on
+single-hop questions. This is the central claim of agentic RAG, measured directly.
 
 ## Reproducibility
-- Exact command, configuration hash, dataset version, W&B/MLflow run URL.
+
+Everything is offline and deterministic; the numbers regenerate exactly.
