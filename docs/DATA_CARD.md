@@ -1,22 +1,19 @@
-# Data Card - Agentic Rag
+# Data Card - Agentic RAG
 
-## Sources & provenance
-- Where each dataset came from (links), collection method, dates.
+The project bundles one small, synthetic corpus and a labeled question set for the
+evaluation; there is no training data and nothing is downloaded.
 
-## Licensing
-- License of each source and whether usage complies. Redistribution terms.
+## bundled corpus (`src/agentic_rag/data.py`)
 
-## Composition
-- Size, format, fields, language(s), modality.
-
-## Preprocessing & filtering
-- Cleaning, dedup, PII handling, filtering rules.
-
-## Contamination checks
-- How you ensured evaluation data is not in training / few-shot context.
-
-## Known biases & gaps
-- Representation gaps, label noise, sampling bias.
+- **Provenance:** hand-authored for this project. Eleven short encyclopedia-style passages
+  linked by shared entities (landmark -> city -> country), deliberately structured so some
+  questions require two retrieval hops.
+- **Labeled questions:** seven natural-language questions, each mapped to the answer
+  passage id and a multi-hop flag.
+- **Licensing:** authored by this repository; MIT.
+- **Known gaps:** tiny, English, general-knowledge; a demonstration set, not a competitive
+  multi-hop benchmark.
 
 ## Ethical considerations
-- Consent, sensitive content, privacy.
+
+The corpus is synthetic and contains no personal, sensitive, or copyrighted content.
