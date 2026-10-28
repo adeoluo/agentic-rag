@@ -107,6 +107,14 @@ print(result.answer.text, result.answer.citations)
   same entity twice, guaranteeing termination. ([ADR-0003](docs/adr/0003-bounded-hops.md))
 - **Zero runtime dependencies.** The retriever, decomposer, and synthesizer are pure Python.
 
+## Performance
+
+A deterministic micro-benchmark (`uv run python benchmarks/benchmark.py`) builds a 500
+document index and runs 200 queries, reporting index-build time and query throughput for the
+single-hop and agentic paths. On a laptop the index builds in a few milliseconds and both
+paths sustain on the order of a thousand queries per second, since the agent reuses one
+Okapi BM25 index across hops.
+
 ## Responsible AI
 
 - **Model card:** [docs/MODEL_CARD.md](docs/MODEL_CARD.md)
