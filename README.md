@@ -1,88 +1,132 @@
-<h1 align="center">Agentic Rag</h1>
+<h1 align="center">Agentic RAG</h1>
 
 <p align="center">
-  <em>Agentic retrieval from scratch: query decomposition, a self-querying retriever-agent, and iterative multi-hop retrieve-reason-retrieve</em>
+  <em>Agentic retrieval built from scratch: query decomposition, a self-querying retriever-agent, and iterative multi-hop retrieve-reason-retrieve.</em>
 </p>
 
 <p align="center">
-  <a href="../../actions"><img alt="CI" src="https://img.shields.io/badge/CI-passing-brightgreen"></a>
-  <img alt="Coverage" src="https://img.shields.io/badge/coverage-90%25-brightgreen">
-  <img alt="Python" src="https://img.shields.io/badge/python-3.11+-blue">
+  <a href="https://github.com/adeoluo/agentic-rag/actions/workflows/ci.yml"><img alt="Continuous integration" src="https://github.com/adeoluo/agentic-rag/actions/workflows/ci.yml/badge.svg"></a>
+  <img alt="Coverage" src="https://img.shields.io/badge/coverage-95%25-brightgreen">
+  <img alt="Python" src="https://img.shields.io/badge/python-3.11%20%7C%203.12-blue">
+  <img alt="Type checked" src="https://img.shields.io/badge/mypy-strict-blue">
+  <img alt="Runtime dependencies" src="https://img.shields.io/badge/runtime%20deps-0-brightgreen">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
-  <a href="DEMONSTRATION_URL"><img alt="Demonstration" src="https://img.shields.io/badge/demonstration-live-6366F1"></a>
 </p>
 
 ---
 
 ## Motivation
 
-What problem does this solve, and why does it matter? What's the insight or hard part?
-Who is this for? (2 - 4 sentences - lead with the "so what".)
+Classic retrieval-augmented generation retrieves once and generates. That fails on
+**multi-hop** questions - "Where is the Eiffel Tower?" needs one hop to learn it is in
+Paris and another to place Paris in France. An *agentic* RAG decides, iteratively, what to
+retrieve next: it decomposes the question, retrieves for each part, and issues follow-up
+queries when the evidence surfaces a new entity to chase. This project builds that control
+loop **from first principles**, with **zero runtime dependencies** and a deterministic,
+offline test suite.
 
 ## Architecture
 
 <p align="center">
-  <img src="docs/architecture/architecture.svg" alt="System architecture" width="760">
+  <img src="docs/architecture/architecture.svg" alt="System architecture" width="860">
 </p>
 
-One paragraph walking through the diagram: the request path, the core components, the
-data stores, and where the model sits. Link to [ADRs](docs/adr/) for key decisions.
+A **decomposer** splits the question into sub-questions; for each, the agent **retrieves**
+from a BM25 index, then a **follow-up (self-query)** step inspects the results for a salient
+new entity and, if found, issues the next hop; finally **synthesis** composes a cited,
+confidence-scored answer from the collected evidence. See the [ADRs](docs/adr/) for key
+choices.
 
 ## Results
 
-> Every claim is backed by a number. Reproduce with `make evaluation`.
+> Reproduce with `python -m agentic_rag evaluate`. Retrieval success = the answer passage
+> was retrieved, over 7 labeled questions (3 of them genuinely multi-hop).
 
-| Metric | This project | Baseline | SOTA / reference |
+| Method | overall | multi-hop | single-hop |
 |---|---:|---:|---:|
-| Primary metric (↑) | **0.00** | 0.00 | 0.00 |
-| Latency p95 (ms, ↓) | **0** | 0 | - |
-| Cost / 1k req ($, ↓) | **0.00** | 0.00 | - |
+| single-hop baseline | 0.43 | **0.00** | 0.75 |
+| **agentic** | **0.71** | **0.67** | 0.75 |
 
-Numbers are mean ± 95% confidence interval over N seeds. Full report: [`docs/EVALUATION_REPORT.md`](docs/EVALUATION_REPORT.md).
+The result is the whole thesis: single-hop retrieval scores **zero** on multi-hop questions
+because the answer passage shares no words with the question, while agentic retrieval
+reaches it by following the intermediate entity - a **+0.67** gain exactly where iterative
+retrieval matters, with no regression on single-hop questions.
 
-<p align="center"><img src="docs/architecture/demonstration.gif" alt="Demonstration" width="640"></p>
+## Demonstration
+
+```text
+$ python -m agentic_rag ask "Where is the Eiffel Tower located"
+Retrieval hops:
+  Where is the Eiffel Tower located  ->  eiffel
+  Where is the Eiffel Tower located (Paris)  ->  eiffel, paris
+Answer: The Eiffel Tower is a wrought-iron landmark located in the city of Paris.
+Confidence: 1.00  Citations: eiffel
+```
 
 ## Quickstart
 
 ```bash
-git clone <repository> && cd Agentic Rag
-cp .env.example .env         # add your keys
-make setup                   # install dependencies + pre-commit
-make test                    # run the test suite
-make run                     # run the application entrypoint
+git clone https://github.com/adeoluo/agentic-rag.git && cd agentic-rag
+make setup                    # install dev tooling + pre-commit hooks
+make all                      # lint + type-check + test
+
+python -m agentic_rag evaluate                             # agentic vs single-hop
+python -m agentic_rag ask "In which country is the Colosseum"
 ```
 
-Or with Docker:
+Use the library directly:
 
-```bash
-docker compose up --build
+```python
+from agentic_rag import AgenticRetriever, BM25Index, Document
+
+index = BM25Index()
+index.add([Document("d0", "..."), Document("d1", "...")])
+result = AgenticRetriever(index, max_hops=2).run("my multi-hop question")
+print(result.answer.text, result.answer.citations)
 ```
+
+## Components
+
+- **Decomposition** - a `RuleDecomposer` splits conjunctions and comparisons into
+  answerable sub-questions (behind a `Decomposer` protocol for a model-backed swap-in).
+- **Retrieval** - a self-contained Okapi `BM25Index`, so the project owns its full stack.
+- **Self-querying** - a `FollowUpGenerator` surfaces salient, not-yet-chased entities and
+  pivots the question onto them for the next hop.
+- **Synthesis** - `synthesize_answer` extracts the most relevant sentence across the
+  collected evidence, with citations and a confidence proxy.
+- **Agent** - `AgenticRetriever` runs the loop and records an auditable hop-by-hop trace.
+- **Evaluation** - `evaluate` scores retrieval success, split by single- vs multi-hop.
 
 ## Design decisions
 
-- **Why X over Y** - short rationale, link to [ADR](docs/adr/).
-- **Key tradeoff** - what you optimized for and what you gave up.
-
-## Evaluation
-
-How the numbers were produced: datasets, graders, seeds, hardware, cost.
-See [`docs/EVALUATION_REPORT.md`](docs/EVALUATION_REPORT.md) and the experiment dashboard: `W&B_URL`.
+- **Rule-based decomposition and self-querying.** The project's contribution is the
+  *control loop*, so these steps are deterministic and inspectable; a model-backed
+  decomposer or query generator drops in behind the same shapes.
+  ([ADR-0002](docs/adr/0002-rule-based-control.md))
+- **A hop budget with pivot tracking.** Follow-up queries are bounded and never chase the
+  same entity twice, guaranteeing termination. ([ADR-0003](docs/adr/0003-bounded-hops.md))
+- **Zero runtime dependencies.** The retriever, decomposer, and synthesizer are pure Python.
 
 ## Responsible AI
 
-- **Model card:** [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md)
-- **Data card:** [`docs/DATA_CARD.md`](docs/DATA_CARD.md)
-- **Threat model:** [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)
+- **Model card:** [docs/MODEL_CARD.md](docs/MODEL_CARD.md)
+- **Data card:** [docs/DATA_CARD.md](docs/DATA_CARD.md)
+- **Threat model:** [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md)
 
 ## Limitations
 
-Honest list of what this does **not** do, known failure modes, and where it breaks.
+- Decomposition and self-querying are rule-based; genuinely open-ended reasoning needs a
+  model-backed decomposer (a deliberate boundary to stay from-scratch and dependency-free).
+- Retrieval is lexical BM25, so it cannot bridge pure paraphrase gaps between hops.
+- The bundled corpus is a demonstration, not a competitive multi-hop benchmark.
 
 ## Roadmap
 
-- [ ] Next improvement
-- [ ] Stretch goal
+- [ ] Model-backed decomposer and query generator behind the existing protocols
+- [ ] Dense retrieval to bridge paraphrase gaps between hops
+- [ ] A larger multi-hop benchmark with graded relevance
 
 ## License
 
-[MIT](LICENSE) · Part of a [24-project AI-engineering portfolio](PORTFOLIO_URL).
+[MIT](LICENSE). Part of a 28-project artificial intelligence engineering portfolio by
+[adeoluo](https://github.com/adeoluo).

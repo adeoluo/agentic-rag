@@ -1,5 +1,5 @@
 ---
-title: System Architecture - Agentic Rag
+title: System Architecture - Agentic RAG
 config:
   theme: base
   themeVariables:
@@ -15,24 +15,23 @@ flowchart LR
     classDef core     fill:#6366F1,stroke:#1E293B,color:#ffffff,stroke-width:1px;
     classDef data     fill:#10B981,stroke:#1E293B,color:#ffffff,stroke-width:1px;
     classDef external fill:#F59E0B,stroke:#1E293B,color:#1E293B,stroke-width:1px;
-    classDef danger   fill:#EF4444,stroke:#1E293B,color:#ffffff,stroke-width:1px;
 
-    User([User]):::external
+    Question([Question]):::external
 
-    subgraph Application["Application Service"]
-        API[API Layer]:::core
-        Core[Core Engine]:::core
-        Evaluation[Evaluation Harness]:::core
+    subgraph Agent["Agentic Control Loop"]
+        Decompose[Decomposer]:::core
+        Retrieve[Retrieve]:::core
+        FollowUp[Follow-up / self-query]:::core
+        Synthesize[Answer synthesis]:::core
     end
 
-    Cache[(Semantic Cache)]:::data
-    Store[(Datastore / Index)]:::data
-    LLM{{LLM Provider}}:::external
+    Index[(BM25 index)]:::data
 
-    User -->|request| API
-    API --> Core
-    Core -->|lookup| Cache
-    Core -->|retrieve| Store
-    Core -->|completion| LLM
-    Core -.->|traces/metrics| Evaluation
-    Core -->|response| User
+    Question --> Decompose
+    Decompose -->|sub-questions| Retrieve
+    Retrieve -->|query| Index
+    Index -->|passages| Retrieve
+    Retrieve --> FollowUp
+    FollowUp -->|next hop| Retrieve
+    FollowUp -->|evidence| Synthesize
+    Synthesize -->|cited answer| Question
