@@ -16,7 +16,9 @@ builds the index once at startup and then serves stateless requests.
 
 | Method | Path | Body | Success |
 |---|---|---|---|
-| GET | `/health` | none | `{"status": "ok", "index_size": N}` |
+| GET | `/health` | none | `{"status": "ok", "index_size": N}` (liveness) |
+| GET | `/ready` | none | readiness, once the index is loaded |
+| GET | `/metrics` | none | per-route request, error, and latency metrics (Prometheus text) |
 | POST | `/retrieve` | `{"question", "max_hops"?, "k"?}` | answer, citations, confidence, hop trace |
 
 Every error path returns a JSON `{"error": ...}` with a 4xx status; malformed JSON
