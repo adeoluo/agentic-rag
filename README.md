@@ -99,7 +99,8 @@ curl -s -X POST localhost:8000/retrieve -d '{"question": "What is the capital of
 `GET /health` reports liveness and index size; `POST /retrieve` returns the cited answer,
 confidence, and the full hop trace. Requests are validated and bounded. See the
 [operations guide](docs/OPERATIONS.md) for the service contract, service level objectives,
-and operational constraints.
+and operational constraints. The service also exposes `GET /ready` (readiness) and
+`GET /metrics` (per-route request, error, and latency metrics in Prometheus text format).
 
 ## Components
 
@@ -160,5 +161,5 @@ complete request walk-through is in the [end-to-end case study](docs/CASE_STUDY.
 
 ## License
 
-[MIT](LICENSE). Part of a 28-project artificial intelligence engineering portfolio by
+[MIT](LICENSE). Part of an artificial intelligence engineering portfolio by
 [adeoluo](https://github.com/adeoluo).

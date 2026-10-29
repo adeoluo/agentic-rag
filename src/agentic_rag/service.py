@@ -21,14 +21,16 @@ which is the shape a production deployment would scale horizontally.
 from __future__ import annotations
 
 import json
+import time
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 from agentic_rag.agent import AgenticRetriever
 from agentic_rag.core.retrieval import BM25Index, Document
 from agentic_rag.data import corpus
+from agentic_rag.observability import ServiceMetrics
 
 JsonObject = dict[str, Any]
 _MAX_QUESTION_CHARS = 2000
@@ -41,6 +43,7 @@ class RetrievalService:
     """Holds the index and answers retrieval requests."""
 
     index: BM25Index
+    metrics: ServiceMetrics = field(default_factory=ServiceMetrics)
 
     @classmethod
     def from_documents(cls, documents: list[Document] | None = None) -> RetrievalService:
@@ -83,11 +86,9 @@ def _validate_retrieve(body: Mapping[str, Any]) -> tuple[str, int, int]:
     return question, max_hops, k
 
 
-def handle(
+def _route(
     method: str, path: str, body: Mapping[str, Any], service: RetrievalService
 ) -> tuple[int, JsonObject]:
-    """Pure request handler: route a request to a status code and payload."""
-
     if method == "GET" and path == "/health":
         return 200, {"status": "ok", "index_size": service.index_size}
     if method == "POST" and path == "/retrieve":
@@ -97,6 +98,21 @@ def handle(
             return 400, {"error": str(error)}
         return 200, service.retrieve(question, max_hops=max_hops, k=k)
     return 404, {"error": f"no route for {method} {path}"}
+
+
+def handle(
+    method: str, path: str, body: Mapping[str, Any], service: RetrievalService
+) -> tuple[int, JsonObject]:
+    """Route a request, recording per-route metrics, and return status and payload."""
+
+    if method == "GET" and path == "/ready":
+        return 200, {"status": "ready", "index_size": service.index_size}
+    start = time.perf_counter()
+    status, payload = _route(method, path, body, service)
+    service.metrics.observe(
+        f"{method} {path}", (time.perf_counter() - start) * 1000.0, error=status >= 400
+    )
+    return status, payload
 
 
 class _Handler(BaseHTTPRequestHandler):  # pragma: no cover - exercised over sockets
@@ -111,6 +127,14 @@ class _Handler(BaseHTTPRequestHandler):  # pragma: no cover - exercised over soc
         self.wfile.write(encoded)
 
     def do_GET(self) -> None:
+        if self.path == "/metrics":
+            body = self.service.metrics.render_prometheus().encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; version=0.0.4")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         status, payload = handle("GET", self.path, {}, self.service)
         self._respond(status, payload)
 

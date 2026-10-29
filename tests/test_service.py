@@ -52,3 +52,21 @@ def test_unknown_route() -> None:
     status, payload = handle("GET", "/nope", {}, _service())
     assert status == 404
     assert "error" in payload
+
+
+def test_ready_endpoint() -> None:
+    status, payload = handle("GET", "/ready", {}, _service())
+    assert status == 200
+    assert payload["status"] == "ready"
+
+
+def test_metrics_record_requests() -> None:
+    service = _service()
+    handle("POST", "/retrieve", {"question": "What is the capital of France"}, service)
+    handle("POST", "/retrieve", {}, service)  # a 400
+    text = service.metrics.render_prometheus()
+    assert "service_requests_total" in text
+    assert 'route="POST /retrieve"' in text
+    assert service.metrics.total_requests == 2
+    assert service.metrics.total_errors == 1
+    assert "service_request_duration_ms_bucket" in text
