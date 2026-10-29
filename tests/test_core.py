@@ -79,3 +79,13 @@ def test_decompose_comparison() -> None:
     assert len(subs) == 2
     assert "France" in subs[0]
     assert "Japan" in subs[1]
+
+
+def test_decompose_is_linear_on_adversarial_input() -> None:
+    import time
+
+    decomposer = RuleDecomposer()
+    probe = "who is a," + "a" * 16 + " or " + " " * 20000
+    start = time.perf_counter()
+    decomposer.decompose(probe)
+    assert (time.perf_counter() - start) < 0.5

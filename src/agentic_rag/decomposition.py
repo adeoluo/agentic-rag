@@ -16,9 +16,10 @@ import re
 from collections.abc import Sequence
 from typing import Protocol, runtime_checkable
 
-_SPLIT = re.compile(r"\s+(?:and then|then|and also|and|;)\s+", re.IGNORECASE)
+_WHITESPACE = re.compile(r"\s+")
+_SPLIT = re.compile(r" (?:and then|then|and also|and|;) ", re.IGNORECASE)
 _COMPARE = re.compile(
-    r"^\s*(?:which|who|what)\s+(?:is|was|are|has|had)\s+(.+?)\s*[:,]\s*(.+?)\s+or\s+(.+?)\s*\??$",
+    r"^(?:which|who|what) (?:is|was|are|has|had) ([^:,]+)[:,] ?(.+?) or (.+)$",
     re.IGNORECASE,
 )
 
@@ -37,14 +38,17 @@ class RuleDecomposer:
 
     def decompose(self, query: str) -> list[str]:
         """Return sub-questions, or ``[query]`` when the query is already atomic."""
-        comparison = _COMPARE.match(query)
+        # Collapse whitespace first so the patterns below run in linear time on
+        # untrusted input (no ambiguous whitespace quantifiers to backtrack over).
+        normalized = _WHITESPACE.sub(" ", query).strip()
+        comparison = _COMPARE.match(normalized.rstrip("?"))
         if comparison:
             attribute, left, right = comparison.groups()
             return [
-                f"What {attribute} does {left.strip()} have?",
-                f"What {attribute} does {right.strip()} have?",
+                f"What {attribute.strip()} does {left.strip()} have?",
+                f"What {attribute.strip()} does {right.strip()} have?",
             ]
-        parts = [part.strip(" ?.") for part in _SPLIT.split(query) if part.strip(" ?.")]
+        parts = [part.strip(" ?.") for part in _SPLIT.split(normalized) if part.strip(" ?.")]
         if len(parts) <= 1:
-            return [query.strip()]
+            return [normalized]
         return [part if part.endswith("?") else f"{part}?" for part in parts]
