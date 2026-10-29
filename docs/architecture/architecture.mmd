@@ -8,30 +8,51 @@ config:
     primaryBorderColor: "#1E293B"
     primaryTextColor: "#1E293B"
     lineColor: "#64748B"
-    clusterBkg: "#E2E8F0"
+    clusterBkg: "#EEF2FF"
     clusterBorder: "#94A3B8"
 ---
-flowchart LR
+flowchart TB
+    classDef edge     fill:#F59E0B,stroke:#1E293B,color:#1E293B,stroke-width:1px;
     classDef core     fill:#6366F1,stroke:#1E293B,color:#ffffff,stroke-width:1px;
     classDef data     fill:#10B981,stroke:#1E293B,color:#ffffff,stroke-width:1px;
-    classDef external fill:#F59E0B,stroke:#1E293B,color:#1E293B,stroke-width:1px;
+    classDef control  fill:#0EA5E9,stroke:#1E293B,color:#ffffff,stroke-width:1px;
+    classDef obs      fill:#CBD5E1,stroke:#1E293B,color:#1E293B,stroke-width:1px;
 
-    Question([Question]):::external
+    Client([Client]):::edge
 
-    subgraph Agent["Agentic Control Loop"]
-        Decompose[Decomposer]:::core
-        Retrieve[Retrieve]:::core
-        FollowUp[Follow-up / self-query]:::core
-        Synthesize[Answer synthesis]:::core
+    subgraph Edge["Service layer (stdlib HTTP, stateless)"]
+        direction TB
+        Router["Router<br/>GET /health | POST /retrieve"]:::core
+        Validate["Request validation<br/>bounds: question, max_hops, k"]:::control
     end
 
-    Index[(BM25 index)]:::data
+    subgraph Loop["Agentic control loop (bounded, deterministic)"]
+        direction TB
+        Decompose[Decomposer]:::core
+        Retrieve[Retrieve hop]:::core
+        FollowUp["Follow-up self-query<br/>pivot tracking, hop budget"]:::core
+        Synthesize["Answer synthesis<br/>citations + confidence"]:::core
+    end
 
-    Question --> Decompose
+    subgraph DataPlane["Data plane"]
+        direction TB
+        Index[(Okapi BM25 index<br/>in memory, immutable)]:::data
+        Corpus[(Document corpus)]:::data
+    end
+
+    Trace["Per-request trace<br/>hops, citations, confidence"]:::obs
+
+    Client -->|JSON request| Router
+    Router --> Validate
+    Validate -->|question| Decompose
     Decompose -->|sub-questions| Retrieve
     Retrieve -->|query| Index
-    Index -->|passages| Retrieve
+    Index -->|scored passages| Retrieve
     Retrieve --> FollowUp
-    FollowUp -->|next hop| Retrieve
+    FollowUp -->|next hop, within budget| Retrieve
     FollowUp -->|evidence| Synthesize
-    Synthesize -->|cited answer| Question
+    Corpus -.->|loaded once at startup| Index
+    Synthesize -->|cited answer| Router
+    Router -->|JSON response| Client
+    Synthesize -.-> Trace
+    Retrieve -.-> Trace
