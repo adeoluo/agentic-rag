@@ -22,7 +22,7 @@ Classic retrieval-augmented generation retrieves once and generates. That fails 
 Paris and another to place Paris in France. An *agentic* RAG decides, iteratively, what to
 retrieve next: it decomposes the question, retrieves for each part, and issues follow-up
 queries when the evidence surfaces a new entity to chase. This project builds that control
-loop **from first principles**, with **zero runtime dependencies** and a deterministic,
+loop **from scratch**, with **zero runtime dependencies** and a deterministic,
 offline test suite.
 
 ## Architecture
