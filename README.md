@@ -85,6 +85,22 @@ result = AgenticRetriever(index, max_hops=2).run("my multi-hop question")
 print(result.answer.text, result.answer.citations)
 ```
 
+## Running the service
+
+A dependency-free HTTP service exposes the retriever as a production-style JSON API:
+
+```bash
+python -m agentic_rag serve --port 8000
+
+curl localhost:8000/health
+curl -s -X POST localhost:8000/retrieve -d '{"question": "What is the capital of France"}'
+```
+
+`GET /health` reports liveness and index size; `POST /retrieve` returns the cited answer,
+confidence, and the full hop trace. Requests are validated and bounded. See the
+[operations guide](docs/OPERATIONS.md) for the service contract, service level objectives,
+and operational constraints.
+
 ## Components
 
 - **Decomposition** - a `RuleDecomposer` splits conjunctions and comparisons into
@@ -107,13 +123,21 @@ print(result.answer.text, result.answer.citations)
   same entity twice, guaranteeing termination. ([ADR-0003](docs/adr/0003-bounded-hops.md))
 - **Zero runtime dependencies.** The retriever, decomposer, and synthesizer are pure Python.
 
-## Performance
+## Performance and reliability
 
 A deterministic micro-benchmark (`uv run python benchmarks/benchmark.py`) builds a 500
 document index and runs 200 queries, reporting index-build time and query throughput for the
 single-hop and agentic paths. On a laptop the index builds in a few milliseconds and both
 paths sustain on the order of a thousand queries per second, since the agent reuses one
 Okapi BM25 index across hops.
+
+A production-style stress benchmark (`uv run python benchmarks/stress.py`) drives the full
+service handler under concurrent load and reports throughput with p50, p95, and p99 latency.
+It makes a real operational constraint visible: the pure-Python handler is bound by the
+global interpreter lock, so throughput is flat across threads and the tail grows with
+concurrency. The service is therefore scaled with processes, not threads. The full analysis
+and the scaling path are in the [scaling and tradeoffs](docs/SCALING.md) document, and a
+complete request walk-through is in the [end-to-end case study](docs/CASE_STUDY.md).
 
 ## Responsible AI
 
