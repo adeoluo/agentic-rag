@@ -62,12 +62,6 @@ class ServiceMetrics:
         lines.append("# TYPE service_errors_total counter")
         for route, stats in sorted(self.routes.items()):
             lines.append(f'service_errors_total{{route="{route}"}} {stats.errors}')
-        lines.append("# HELP service_request_duration_ms_sum Summed request duration, by route.")
-        lines.append("# TYPE service_request_duration_ms_sum counter")
-        for route, stats in sorted(self.routes.items()):
-            lines.append(
-                f'service_request_duration_ms_sum{{route="{route}"}} {stats.duration_ms_sum:.3f}'
-            )
         lines.append("# HELP service_request_duration_ms Request latency histogram, by route.")
         lines.append("# TYPE service_request_duration_ms histogram")
         for route, stats in sorted(self.routes.items()):
@@ -79,4 +73,11 @@ class ServiceMetrics:
             lines.append(
                 f'service_request_duration_ms_bucket{{route="{route}",le="+Inf"}} {stats.requests}'
             )
+            # A Prometheus histogram family also carries _sum and _count; they
+            # must share the histogram's metric name (not a separate counter
+            # family) so parsers can compute averages and quantiles.
+            lines.append(
+                f'service_request_duration_ms_sum{{route="{route}"}} {stats.duration_ms_sum:.3f}'
+            )
+            lines.append(f'service_request_duration_ms_count{{route="{route}"}} {stats.requests}')
         return "\n".join(lines) + "\n"

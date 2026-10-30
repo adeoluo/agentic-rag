@@ -43,6 +43,16 @@ def test_synthesize_no_passages() -> None:
     assert answer.citations == ()
 
 
+def test_synthesize_abstains_on_zero_overlap() -> None:
+    # Regression: a passage with no shared query terms was still cited at
+    # confidence 0.0. With no overlap there is no grounding, so abstain.
+    passages = [Scored(Document("d0", "Paris is the capital of France."), 1.0)]
+    answer = synthesize_answer("zzz qqq nonsense", passages)
+    assert answer.citations == ()
+    assert answer.confidence == 0.0
+    assert answer.text == "I could not find an answer."
+
+
 def test_followup_surfaces_new_entity() -> None:
     generator = FollowUpGenerator()
     nxt = generator.next_query(
