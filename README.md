@@ -52,6 +52,27 @@ because the answer passage shares no words with the question, while agentic retr
 reaches it by following the intermediate entity - a **+0.67** gain exactly where iterative
 retrieval matters, with no regression on single-hop questions.
 
+### Scale
+
+A separate driver, `benchmarks/scale.py`, indexes progressively larger synthetic
+corpora and runs a fixed 100-query set against each, reporting wall-clock time,
+query throughput, peak memory (stdlib `tracemalloc`), and recall@5 against one
+planted relevant document per query. Measured on this machine (`uv run python
+benchmarks/scale.py`):
+
+| Documents | Seconds | Queries/sec | Peak MiB | recall@5 |
+|---:|---:|---:|---:|---:|
+| 500 | 0.48 | 210 | 1.4 | 0.55 |
+| 1,000 | 0.96 | 104 | 2.9 | 0.38 |
+| 2,000 | 2.24 | 45 | 5.7 | 0.26 |
+| 4,000 | 4.56 | 22 | 11.5 | 0.20 |
+
+Throughput falls roughly linearly because the from-scratch BM25 scores every
+document per query, and recall decays as the field of random distractors grows.
+These numbers are from synthetic data on a pure-Python implementation; they are
+**not** a comparison against production vector databases or inverted-index
+engines, which would be far faster and are the right tool at real scale.
+
 ## Demonstration
 
 ```text
