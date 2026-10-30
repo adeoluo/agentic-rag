@@ -70,3 +70,16 @@ def test_metrics_record_requests() -> None:
     assert service.metrics.total_requests == 2
     assert service.metrics.total_errors == 1
     assert "service_request_duration_ms_bucket" in text
+
+
+def test_metrics_histogram_has_count_and_sum_in_family() -> None:
+    # Regression: the histogram was emitted without _count, and _sum was a
+    # separate counter family, which breaks histogram_quantile and averages.
+    service = _service()
+    handle("POST", "/retrieve", {"question": "What is the capital of France"}, service)
+    text = service.metrics.render_prometheus()
+    assert "service_request_duration_ms_count{" in text
+    assert "service_request_duration_ms_sum{" in text
+    # the histogram name must be declared exactly once, as a histogram
+    assert text.count("# TYPE service_request_duration_ms histogram") == 1
+    assert "service_request_duration_ms_sum counter" not in text

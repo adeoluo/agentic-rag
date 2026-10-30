@@ -68,10 +68,12 @@ def synthesize_answer(question: str, passages: Sequence[Scored]) -> Answer:
             best_hits = hits
             best_text = sentence
             best_id = scored.id
-    confidence = min(1.0, best_hits / len(query_terms)) if query_terms else 0.0
-    citations = (best_id,) if best_id else ()
-    text = best_text or "I could not find an answer."
-    return Answer(text=text, citations=citations, confidence=confidence)
+    # Abstain when no retrieved sentence shares a single query term: a citation
+    # with zero overlap is not grounded, so it should not be emitted.
+    if best_hits <= 0 or not best_text:
+        return Answer(text="I could not find an answer.", citations=(), confidence=0.0)
+    confidence = min(1.0, best_hits / len(query_terms))
+    return Answer(text=best_text, citations=(best_id,), confidence=confidence)
 
 
 class FollowUpGenerator:
