@@ -154,6 +154,22 @@ and operational constraints. The service also exposes `GET /ready` (readiness) a
 - **Agent** - `AgenticRetriever` runs the loop and records an auditable hop-by-hop trace.
 - **Evaluation** - `evaluate` scores retrieval success, split by single- vs multi-hop.
 
+### Demos
+
+Recorded from real runs with [vhs](https://github.com/charmbracelet/vhs); each tape is in `docs/demo/`.
+
+An agentic multi-step question: the plan, each retrieval, and the cited answer.
+
+<p align="center">
+  <img src="docs/demo/ask.gif" alt="An agentic multi-step question: the plan, each retrieval, and the cited answer" width="860">
+</p>
+
+The evaluation against single-shot retrieval.
+
+<p align="center">
+  <img src="docs/demo/evaluate.gif" alt="The evaluation against single-shot retrieval" width="860">
+</p>
+
 ## Design decisions
 
 - **Rule-based decomposition and self-querying.** The project's contribution is the
