@@ -1,0 +1,38 @@
+# Agentic RAG
+
+> Agentic retrieval built from scratch: query decomposition, a self-querying retriever-agent, and iterative multi-hop retrieve-reason-retrieve.
+
+Languages: Python. License: MIT. Source: https://github.com/adeoluo/agentic-rag
+
+## Docs
+
+- [README](https://github.com/adeoluo/agentic-rag/blob/main/README.md): motivation, architecture, results, quickstart, usage, design decisions, testing, responsible ai, limitations, roadmap
+- [AGENTS.md](https://github.com/adeoluo/agentic-rag/blob/main/AGENTS.md): layout, commands and conventions for changing the code
+- [Architecture diagram](https://github.com/adeoluo/agentic-rag/blob/main/docs/architecture/architecture.mmd): Mermaid source of the component diagram
+- [End-to-End Case Study - Answering a Multi-Hop Question](https://github.com/adeoluo/agentic-rag/blob/main/docs/CASE_STUDY.md)
+- [Data Card - Agentic RAG](https://github.com/adeoluo/agentic-rag/blob/main/docs/DATA_CARD.md)
+- [Definition of Done](https://github.com/adeoluo/agentic-rag/blob/main/docs/DEFINITION_OF_DONE.md)
+- [Evaluation Report - Agentic RAG](https://github.com/adeoluo/agentic-rag/blob/main/docs/EVALUATION_REPORT.md)
+- [System Card - Agentic RAG](https://github.com/adeoluo/agentic-rag/blob/main/docs/MODEL_CARD.md)
+- [Operations Guide - Agentic RAG](https://github.com/adeoluo/agentic-rag/blob/main/docs/OPERATIONS.md)
+- [Scaling and Design Tradeoffs - Agentic RAG](https://github.com/adeoluo/agentic-rag/blob/main/docs/SCALING.md)
+- [Threat Model - Agentic RAG](https://github.com/adeoluo/agentic-rag/blob/main/docs/THREAT_MODEL.md)
+- [ADR-0001: Record architecture decisions](https://github.com/adeoluo/agentic-rag/blob/main/docs/adr/0001-record-architecture-decisions.md)
+- [ADR-0002: Rule-based decomposition and self-querying](https://github.com/adeoluo/agentic-rag/blob/main/docs/adr/0002-rule-based-control.md)
+- [ADR-0003: A bounded hop budget with pivot tracking](https://github.com/adeoluo/agentic-rag/blob/main/docs/adr/0003-bounded-hops.md)
+- [ADR-NNNN: <short title>](https://github.com/adeoluo/agentic-rag/blob/main/docs/adr/template.md)
+- [Changelog](https://github.com/adeoluo/agentic-rag/blob/main/CHANGELOG.md): release history
+
+## Source
+
+- [src/agentic_rag/__init__.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/__init__.py): Agentic RAG - iterative multi-hop retrieval driven by an agent.
+- [src/agentic_rag/agent.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/agent.py): The agentic retrieval control loop.
+- [src/agentic_rag/cli.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/cli.py): Command-line interface for agentic retrieval.
+- [src/agentic_rag/core/__init__.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/core/__init__.py): Core abstractions for agentic retrieval.
+- [src/agentic_rag/core/retrieval.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/core/retrieval.py): Core types and a self-contained retriever for agentic retrieval.
+- [src/agentic_rag/data.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/data.py): A bundled multi-hop corpus and labeled questions.
+- [src/agentic_rag/decomposition.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/decomposition.py): Query decomposition: splitting a complex question into answerable sub-questions.
+- [src/agentic_rag/evaluation.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/evaluation.py): Evaluating agentic retrieval against a single-hop baseline.
+- [src/agentic_rag/observability.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/observability.py): In-process request metrics for the HTTP service.
+- [src/agentic_rag/service.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/service.py): A standard-library HTTP service exposing the agentic retriever.
+- [src/agentic_rag/synthesis.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/synthesis.py): Answer synthesis and a follow-up (self-query) generator.
