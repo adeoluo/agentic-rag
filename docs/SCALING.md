@@ -23,8 +23,8 @@ the design target is a flat per-request cost and a shardable index.
 
 ## Substantial tradeoffs
 
-- **In-memory index vs external store.** In memory gives millisecond retrieval and zero
-  dependencies, at the cost of corpus size per replica and restart-to-update. An
+- **In-memory index vs external store.** In memory gives millisecond retrieval and no external
+  service to operate, at the cost of corpus size per replica and restart-to-update. An
   external vector or inverted-index store would lift the size ceiling but add a network
   hop, a dependency, and an operational surface. The reference chooses simplicity and
   latency; the index is behind an interface so the store can be swapped.
