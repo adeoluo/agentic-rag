@@ -170,6 +170,12 @@ The evaluation against single-shot retrieval.
   <img src="docs/demo/evaluate.gif" alt="The evaluation against single-shot retrieval" width="860">
 </p>
 
+The HTTP service: health, then an agentic retrieval request.
+
+<p align="center">
+  <img src="docs/demo/http.gif" alt="The HTTP service: health, then an agentic retrieval request" width="860">
+</p>
+
 ## Design decisions
 
 - **Rule-based decomposition and self-querying.** The project's contribution is the
