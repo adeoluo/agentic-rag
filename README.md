@@ -28,11 +28,15 @@ loop **from scratch**, with a deterministic, offline test suite.
   <img src="docs/architecture/architecture.svg" alt="Architecture diagram" width="860">
 </p>
 
-A **decomposer** splits the question into sub-questions; for each, the agent **retrieves**
-from a BM25 index, then a **follow-up (self-query)** step inspects the results for a salient
-new entity and, if found, issues the next hop; finally **synthesis** composes a cited,
-confidence-scored answer from the collected evidence. See the [ADRs](docs/adr/) for key
-choices.
+<sub>Legend: amber = entry points and external systems, indigo = core logic, green = data and state, blue = validation and control, grey = observability and outputs.</sub>
+
+A request is validated (question length, hop budget, `k`) before it reaches the agent. A
+**decomposer** splits the question into sub-questions; for each, the agent **retrieves** from an
+in-memory BM25 index, then a **follow-up (self-query)** step inspects the results for a salient
+new entity and, within the hop budget, issues the next hop; finally **synthesis** composes a
+cited, confidence-scored answer from the collected evidence. The response carries the full hop
+trace, every route is timed into Prometheus metrics, and the `evaluate` command compares the agent
+with a single-hop baseline on labeled questions. See the [ADRs](docs/adr/) for key choices.
 
 ## Results
 

@@ -5,41 +5,53 @@ flowchart TD
     classDef control  fill:#0EA5E9,stroke:#1E293B,color:#ffffff,stroke-width:1px;
     classDef obs      fill:#CBD5E1,stroke:#1E293B,color:#1E293B,stroke-width:1px;
 
-    Client([Client]):::edge
+    Client(["HTTP client"]):::edge
+    CLI(["CLI<br/>ask, evaluate, serve"]):::edge
 
-    subgraph Edge["Service layer (stdlib HTTP, stateless)"]
+    subgraph Interfaces["Service layer (stdlib HTTP, stateless)"]
         direction TB
-        Router["Router<br/>GET /health | POST /retrieve"]:::core
-        Validate["Request validation<br/>bounds: question, max_hops, k"]:::control
+        Router["Router<br/>/health, /ready, /retrieve, /metrics"]:::edge
+        Validate["Request validation<br/>question length, max_hops, k bounds"]:::control
     end
 
-    subgraph Loop["Agentic control loop (bounded, deterministic)"]
+    subgraph Loop["Agentic retriever (bounded, deterministic)"]
         direction TB
-        Decompose[Decomposer]:::core
-        Retrieve[Retrieve hop]:::core
-        FollowUp["Follow-up self-query<br/>pivot tracking, hop budget"]:::core
-        Synthesize["Answer synthesis<br/>citations + confidence"]:::core
+        Decompose["RuleDecomposer<br/>conjunctions and comparisons"]:::core
+        Retrieve["Retrieve hop<br/>BM25 top-k per query"]:::core
+        FollowUp["FollowUpGenerator<br/>self-query on a new entity"]:::core
+        Budget["Hop budget and dedup<br/>max_hops, seen queries, pivots"]:::control
+        Synthesize["Answer synthesis<br/>best sentence, citations, confidence"]:::core
     end
 
-    subgraph DataPlane["Data plane"]
+    subgraph DataPlane["Data plane (in memory)"]
         direction TB
-        Index[(Okapi BM25 index<br/>in memory, immutable)]:::data
-        Corpus[(Document corpus)]:::data
+        Corpus[("Document corpus<br/>data.py passages")]:::data
+        Index[("Okapi BM25 index<br/>k1 1.5, b 0.75")]:::data
+        Questions[("Labeled questions<br/>single and multi-hop")]:::data
     end
 
-    Trace["Per-request trace<br/>hops, citations, confidence"]:::obs
+    subgraph Observability["Evaluation and observability"]
+        direction TB
+        Trace["Response trace<br/>sub-questions, hops, retrieved ids"]:::obs
+        Metrics["ServiceMetrics<br/>per-route latency, errors, Prometheus"]:::obs
+        Eval["Evaluation report<br/>agentic vs single-hop hit rate"]:::obs
+    end
 
     Client -->|JSON request| Router
+    CLI -->|ask| Decompose
+    CLI -->|serve| Router
     Router --> Validate
     Validate -->|question| Decompose
     Decompose -->|sub-questions| Retrieve
-    Retrieve -->|query| Index
-    Index -->|scored passages| Retrieve
     Retrieve --> FollowUp
-    FollowUp -->|next hop, within budget| Retrieve
-    FollowUp -->|evidence| Synthesize
-    Corpus -.->|loaded once at startup| Index
-    Synthesize -->|cited answer| Router
-    Router -->|JSON response| Client
-    Synthesize -.-> Trace
-    Retrieve -.-> Trace
+    FollowUp -->|next query| Budget
+    Budget -->|within budget| Retrieve
+    FollowUp -->|ranked evidence| Synthesize
+    Corpus -.->|indexed once at startup| Index
+    Retrieve -.->|search| Index
+    Synthesize -->|cited answer + trace| Trace
+    Trace -->|JSON response| Router
+    Router -.-> Metrics
+    CLI -->|evaluate| Eval
+    Questions -.-> Eval
+    Index -.->|single-hop baseline| Eval
