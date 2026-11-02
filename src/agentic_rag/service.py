@@ -1,4 +1,4 @@
-"""A dependency-free HTTP service exposing the agentic retriever.
+"""A standard-library HTTP service exposing the agentic retriever.
 
 The service is split into two layers so it is fully testable without opening a
 socket:

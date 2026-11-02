@@ -5,12 +5,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/adeoluo/agentic-rag/actions/workflows/ci.yml"><img alt="Continuous integration" src="https://github.com/adeoluo/agentic-rag/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="Coverage" src="https://img.shields.io/badge/coverage-95%25-brightgreen">
+  <a href="https://github.com/adeoluo/agentic-rag/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/adeoluo/agentic-rag/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/adeoluo/agentic-rag/releases"><img alt="Release" src="https://img.shields.io/github/v/release/adeoluo/agentic-rag"></a>
   <img alt="Python" src="https://img.shields.io/badge/python-3.11%20%7C%203.12-blue">
-  <img alt="Type checked" src="https://img.shields.io/badge/mypy-strict-blue">
-  <img alt="Runtime dependencies" src="https://img.shields.io/badge/runtime%20deps-0-brightgreen">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
 </p>
 
 ---
@@ -22,13 +20,12 @@ Classic retrieval-augmented generation retrieves once and generates. That fails 
 Paris and another to place Paris in France. An *agentic* RAG decides, iteratively, what to
 retrieve next: it decomposes the question, retrieves for each part, and issues follow-up
 queries when the evidence surfaces a new entity to chase. This project builds that control
-loop **from scratch**, with **zero runtime dependencies** and a deterministic,
-offline test suite.
+loop **from scratch**, with a deterministic, offline test suite.
 
 ## Architecture
 
 <p align="center">
-  <img src="docs/architecture/architecture.svg" alt="System architecture" width="860">
+  <img src="docs/architecture/architecture.svg" alt="Architecture diagram" width="860">
 </p>
 
 A **decomposer** splits the question into sub-questions; for each, the agent **retrieves**
@@ -69,20 +66,25 @@ benchmarks/scale.py`):
 
 Throughput falls roughly linearly because the from-scratch BM25 scores every
 document per query, and recall decays as the field of random distractors grows.
-These numbers are from synthetic data on a pure-Python implementation; they are
+These numbers are from synthetic data on this Python implementation; they are
 **not** a comparison against production vector databases or inverted-index
 engines, which would be far faster and are the right tool at real scale.
 
-## Demonstration
+### Performance and reliability
 
-```text
-$ python -m agentic_rag ask "Where is the Eiffel Tower located"
-Retrieval hops:
-  Where is the Eiffel Tower located  ->  eiffel
-  Where is the Eiffel Tower located (Paris)  ->  eiffel, paris
-Answer: The Eiffel Tower is a wrought-iron landmark located in the city of Paris.
-Confidence: 1.00  Citations: eiffel
-```
+A deterministic micro-benchmark (`uv run python benchmarks/benchmark.py`) builds a 500
+document index and runs 200 queries, reporting index-build time and query throughput for the
+single-hop and agentic paths. On a laptop the index builds in a few milliseconds and both
+paths sustain on the order of a thousand queries per second, since the agent reuses one
+Okapi BM25 index across hops.
+
+A production-style stress benchmark (`uv run python benchmarks/stress.py`) drives the full
+service handler under concurrent load and reports throughput with p50, p95, and p99 latency.
+It makes a real operational constraint visible: the CPU-bound Python handler is limited by the
+global interpreter lock, so throughput is flat across threads and the tail grows with
+concurrency. The service is therefore scaled with processes, not threads. The full analysis
+and the scaling path are in the [scaling and tradeoffs](docs/SCALING.md) document, and a
+complete request walk-through is in the [end-to-end case study](docs/CASE_STUDY.md).
 
 ## Quickstart
 
@@ -106,9 +108,22 @@ result = AgenticRetriever(index, max_hops=2).run("my multi-hop question")
 print(result.answer.text, result.answer.citations)
 ```
 
-## Running the service
+## Usage
 
-A dependency-free HTTP service exposes the retriever as a production-style JSON API:
+### Demonstration
+
+```text
+$ python -m agentic_rag ask "Where is the Eiffel Tower located"
+Retrieval hops:
+  Where is the Eiffel Tower located  ->  eiffel
+  Where is the Eiffel Tower located (Paris)  ->  eiffel, paris
+Answer: The Eiffel Tower is a wrought-iron landmark located in the city of Paris.
+Confidence: 1.00  Citations: eiffel
+```
+
+### HTTP service
+
+A standard-library HTTP service exposes the retriever as a production-style JSON API:
 
 ```bash
 python -m agentic_rag serve --port 8000
@@ -123,7 +138,7 @@ confidence, and the full hop trace. Requests are validated and bounded. See the
 and operational constraints. The service also exposes `GET /ready` (readiness) and
 `GET /metrics` (per-route request, error, and latency metrics in Prometheus text format).
 
-## Components
+### Components
 
 - **Decomposition** - a `RuleDecomposer` splits conjunctions and comparisons into
   answerable sub-questions (behind a `Decomposer` protocol for a model-backed swap-in).
@@ -143,23 +158,30 @@ and operational constraints. The service also exposes `GET /ready` (readiness) a
   ([ADR-0002](docs/adr/0002-rule-based-control.md))
 - **A hop budget with pivot tracking.** Follow-up queries are bounded and never chase the
   same entity twice, guaranteeing termination. ([ADR-0003](docs/adr/0003-bounded-hops.md))
-- **Zero runtime dependencies.** The retriever, decomposer, and synthesizer are pure Python.
+- **From-scratch core.** The retriever, decomposer, and synthesizer are implemented in this
+  package, so every retrieval and reasoning step is inspectable.
 
-## Performance and reliability
+## Testing
 
-A deterministic micro-benchmark (`uv run python benchmarks/benchmark.py`) builds a 500
-document index and runs 200 queries, reporting index-build time and query throughput for the
-single-hop and agentic paths. On a laptop the index builds in a few milliseconds and both
-paths sustain on the order of a thousand queries per second, since the agent reuses one
-Okapi BM25 index across hops.
+```bash
+make test                     # or: uv run pytest
+uv run pytest --cov=src --cov-report=term-missing --cov-fail-under=80
+```
 
-A production-style stress benchmark (`uv run python benchmarks/stress.py`) drives the full
-service handler under concurrent load and reports throughput with p50, p95, and p99 latency.
-It makes a real operational constraint visible: the pure-Python handler is bound by the
-global interpreter lock, so throughput is flat across threads and the tail grows with
-concurrency. The service is therefore scaled with processes, not threads. The full analysis
-and the scaling path are in the [scaling and tradeoffs](docs/SCALING.md) document, and a
-complete request walk-through is in the [end-to-end case study](docs/CASE_STUDY.md).
+The suite in `tests/` is deterministic and runs offline:
+
+- `test_core.py`: tokenization, document validation, BM25 ranking and empty or no-match
+  queries, and rule-based decomposition, including a linear-time check on adversarial input.
+- `test_agent.py`: answer synthesis (including abstention on zero overlap), follow-up entity
+  selection, single-hop and multi-hop agent runs, parameter validation, and the hop trace.
+- `test_eval_cli.py`: consistency of the bundled corpus and questions, the evaluation
+  report (agentic retrieval must beat single-hop on multi-hop questions), and the CLI.
+- `test_service.py`: the HTTP handler layer, covering `/health`, `/ready`, `/retrieve`
+  request validation and bounds, unknown routes, and the Prometheus metrics output.
+
+CI (`.github/workflows/ci.yml`) runs `ruff format --check`, `ruff check`, `mypy src`, and
+`pytest` with an 80% coverage gate on Python 3.11 and 3.12, then builds the package and the
+Docker image.
 
 ## Responsible AI
 
@@ -170,7 +192,8 @@ complete request walk-through is in the [end-to-end case study](docs/CASE_STUDY.
 ## Limitations
 
 - Decomposition and self-querying are rule-based; genuinely open-ended reasoning needs a
-  model-backed decomposer (a deliberate boundary to stay from-scratch and dependency-free).
+  model-backed decomposer (a deliberate boundary to keep the control loop from scratch and
+  inspectable).
 - Retrieval is lexical BM25, so it cannot bridge pure paraphrase gaps between hops.
 - The bundled corpus is a demonstration, not a competitive multi-hop benchmark.
 
@@ -182,5 +205,4 @@ complete request walk-through is in the [end-to-end case study](docs/CASE_STUDY.
 
 ## License
 
-[MIT](LICENSE). Part of an artificial intelligence engineering portfolio by
-[adeoluo](https://github.com/adeoluo).
+Released under the [MIT License](LICENSE).

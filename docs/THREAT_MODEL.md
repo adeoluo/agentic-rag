@@ -16,7 +16,7 @@
 | Non-terminating retrieval | A follow-up keeps surfacing entities | Hang | Bounded hop budget; pivoted entities are not chased twice; seen queries are skipped |
 | Index poisoning | Malicious documents added | Skewed answers | Retrieval is read-only over indexed text; callers control what is indexed |
 | Misleading confidence | Thin evidence scored high | Overtrust | Confidence is a transparent term-coverage proxy, documented as such |
-| Supply-chain compromise | Malicious dependency | Code execution | Zero runtime dependencies; Dependabot and CodeQL in continuous integration |
+| Supply-chain compromise | Malicious dependency | Code execution | No third-party runtime packages; Dependabot and CodeQL in continuous integration |
 
 ## Residual risk
 

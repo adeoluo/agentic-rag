@@ -9,7 +9,7 @@ it, what it promises, and where it breaks.
 uv run python -m agentic_rag serve --host 0.0.0.0 --port 8000
 ```
 
-The service is a standard-library HTTP server with **zero runtime dependencies**. It
+The service is a standard-library HTTP server. It
 builds the index once at startup and then serves stateless requests.
 
 ## Endpoints

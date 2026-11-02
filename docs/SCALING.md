@@ -31,7 +31,7 @@ the design target is a flat per-request cost and a shardable index.
 - **Rule-based decomposition vs a model.** Rules are deterministic, free, and auditable
   but brittle on unusual phrasing. A model generalizes but adds latency, cost, and
   nondeterminism. The loop is written so a model drops in behind the same interface.
-- **Threads vs processes.** The handler is pure Python and GIL-bound, so threads do not
+- **Threads vs processes.** The handler is CPU-bound Python under the GIL, so threads do not
   add throughput and inflate the tail (measured). Processes are the unit of scaling;
   the service is deliberately stateless to make that trivial.
 - **Bounded hops vs exhaustive search.** A hop budget guarantees termination and a

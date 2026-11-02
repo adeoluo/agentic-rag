@@ -7,7 +7,7 @@ larger synthetic corpora, then runs a fixed query set against each, reporting
 wall-clock time, query throughput, peak memory (via the stdlib ``tracemalloc``),
 and planted-needle recall@k so the quality signal is visible alongside the cost.
 
-The data is synthetic and the retriever is a from-scratch, pure-Python Okapi BM25:
+The data is synthetic and the retriever is a from-scratch Python Okapi BM25:
 it is not meant to be competitive on wall-clock with compiled inverted indexes or
 vector databases. The point is to show how this implementation scales, honestly.
 
@@ -130,7 +130,7 @@ def measure(num_documents: int, *, k: int = _K) -> tuple[float, float, float, fl
 
 
 def main() -> None:
-    print("Synthetic corpus; from-scratch pure-Python BM25 (not a compiled index or vector DB).")
+    print("Synthetic corpus; from-scratch Python BM25 (not a compiled index or vector DB).")
     print(
         f"Fixed query set: {_NUM_QUERIES} queries, recall@{_K} against one planted relevant doc.\n"
     )
