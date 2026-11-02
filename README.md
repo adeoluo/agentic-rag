@@ -63,24 +63,27 @@ benchmarks/scale.py`):
 
 | Documents | Seconds | Queries/sec | Peak MiB | recall@5 |
 |---:|---:|---:|---:|---:|
-| 500 | 0.48 | 210 | 1.4 | 0.55 |
-| 1,000 | 0.96 | 104 | 2.9 | 0.38 |
-| 2,000 | 2.24 | 45 | 5.7 | 0.26 |
-| 4,000 | 4.56 | 22 | 11.5 | 0.20 |
+| 500 | 0.009 | 11,261 | 0.6 | 0.55 |
+| 1,000 | 0.010 | 9,596 | 1.1 | 0.38 |
+| 2,000 | 0.012 | 8,512 | 2.0 | 0.26 |
+| 4,000 | 0.016 | 6,443 | 4.0 | 0.20 |
 
-Throughput falls roughly linearly because the from-scratch BM25 scores every
-document per query, and recall decays as the field of random distractors grows.
-These numbers are from synthetic data on this Python implementation; they are
-**not** a comparison against production vector databases or inverted-index
-engines, which would be far faster and are the right tool at real scale.
+The BM25 index is inverted: each term's postings are two flat arrays (document ids and BM25
+weights precomputed at index time), and a query adds the weights of its terms into one score
+array, so it touches only documents that share a term with the query. Before this, BM25 scored
+every document per query and the same runs managed 210 down to 22 queries per second with
+2.9x the memory; at 4,000 documents throughput is now 290x higher. The rankings and scores are
+identical to the full scan: on the 5,183 abstracts and 300 queries of BEIR SciFact, every top
+100 matches, and queries take 0.135 ms against 7.57 ms (56x). Recall decays as the field of
+random distractors grows; these corpora are synthetic.
 
 ### Performance and reliability
 
 A deterministic micro-benchmark (`uv run python benchmarks/benchmark.py`) builds a 500
 document index and runs 200 queries, reporting index-build time and query throughput for the
-single-hop and agentic paths. On a laptop the index builds in a few milliseconds and both
-paths sustain on the order of a thousand queries per second, since the agent reuses one
-Okapi BM25 index across hops.
+single-hop and agentic paths. On a laptop the index builds in 6.6 ms and the paths sustain
+28,442 (single-hop) and 13,519 (agentic) queries per second, since the agent reuses one Okapi
+BM25 index across hops.
 
 A production-style stress benchmark (`uv run python benchmarks/stress.py`) drives the full
 service handler under concurrent load and reports throughput with p50, p95, and p99 latency.
