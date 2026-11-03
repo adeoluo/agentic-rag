@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The file is generated
 from Conventional Commits by [git-cliff](https://git-cliff.org) when a release is cut
 with `make cut-release`.
 
-## Unreleased
+## [0.1.0] 2026-11-03
 
 ### Features
 
@@ -20,6 +20,10 @@ with `make cut-release`.
 - Remove polynomial backtracking from query decomposition regexes
 - Parse comparison questions with linear string splits
 - Valid Prometheus histogram family and zero-overlap abstention (#14)
+
+### Performance
+
+- Inverted BM25 index in flat arrays (#3)
 
 ### Documentation
 
