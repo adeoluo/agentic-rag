@@ -29,6 +29,7 @@ Languages: Python. License: MIT. Source: https://github.com/adeoluo/agentic-rag
 - [src/agentic_rag/agent.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/agent.py): The agentic retrieval control loop.
 - [src/agentic_rag/cli.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/cli.py): Command-line interface for agentic retrieval.
 - [src/agentic_rag/core/__init__.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/core/__init__.py): Core abstractions for agentic retrieval.
+- [src/agentic_rag/core/postings.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/core/postings.py): Compact inverted-index postings and exact top-k selection.
 - [src/agentic_rag/core/retrieval.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/core/retrieval.py): Core types and a self-contained retriever for agentic retrieval.
 - [src/agentic_rag/data.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/data.py): A bundled multi-hop corpus and labeled questions.
 - [src/agentic_rag/decomposition.py](https://github.com/adeoluo/agentic-rag/blob/main/src/agentic_rag/decomposition.py): Query decomposition: splitting a complex question into answerable sub-questions.
