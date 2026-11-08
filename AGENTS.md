@@ -12,6 +12,7 @@ Agentic retrieval built from scratch: query decomposition, a self-querying retri
 - `benchmarks/`: benchmark scripts and recorded results
 - `docker-compose.yml`: local container setup
 - `docs/`: documentation, architecture diagram source and render, design records
+- `scripts/`: maintenance scripts (release, assets, data)
 - `src/`: library and service source
 - `tests/`: test suite
 
@@ -21,6 +22,7 @@ Key modules:
 - `src/agentic_rag/agent.py`: The agentic retrieval control loop.
 - `src/agentic_rag/cli.py`: Command-line interface for agentic retrieval.
 - `src/agentic_rag/core/__init__.py`: Core abstractions for agentic retrieval.
+- `src/agentic_rag/core/postings.py`: Compact inverted-index postings and exact top-k selection.
 - `src/agentic_rag/core/retrieval.py`: Core types and a self-contained retriever for agentic retrieval.
 - `src/agentic_rag/data.py`: A bundled multi-hop corpus and labeled questions.
 - `src/agentic_rag/decomposition.py`: Query decomposition: splitting a complex question into answerable sub-questions.
